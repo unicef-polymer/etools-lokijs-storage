@@ -33,7 +33,7 @@ Adding a collection with data and expire time:
 `addCollection(collectionName, uniqueProperties, collectionIndices, ttlInterval, expire)`
  
 ```javascript
-this.$.lokiStorageEl.addCollection('newCollection', ['id'], ['id'], 86400000, 86400000*7)
+var newCollection = this.$.lokiStorageEl.addCollection('newCollection', ['id'], ['id'], 86400000, 86400000*7)
 ```
 This new collection will have a unique index for documents id property, also the added indices will be useful for querying documents, 
 `ttlInterval` defines the expire time for collection's stored documents(1d in this example) and `expire` is the expire time for the entire collection.
