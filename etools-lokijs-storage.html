@@ -1,0 +1,189 @@
+<link rel="import" href="../polymer/polymer.html">
+<link rel="import" href="lokijs-storage.html">
+
+<!--
+`etools-lokijs-storage`
+
+Polymer element that integrates LokiJS storage in your app, can be used for client side data caching, offline work and more.
+
+This element warps loki functionality allowing you to manage your data collections. You can add an expire time (in milliseconds)
+to each collection created using addCollection method. This data is stored in a list (collectionsList collection).
+Then you can use cleanExpiredCollections to remove the collections that expired.
+
+You can use the loaded event available to execute some actions after the loki db was loaded.
+
+For documents insert, update, search, sorting or other actions you can use default loki functionality (see documentation here:
+https://rawgit.com/techfort/LokiJS/master/jsdoc/index.html).
+
+@demo demo/index.html
+-->
+
+<dom-module id="etools-lokijs-storage">
+  <script>
+  (function() {
+    'use strict';
+
+    Polymer({
+      is: 'etools-lokijs-storage',
+      properties: {
+        dbName: {
+          type: String,
+          value: ''
+        },
+        idbAdapterName: {
+          type: String,
+          value: ''
+        },
+        autosaveInterval: {
+          type: Number,
+          value: 600000 // 10min
+        },
+        loaded: {
+          type: Boolean,
+          value: LokiJsStorage.loaded,
+          notify: true
+        }
+      },
+      ready: function () {
+        this.loaded = false;
+        if (LokiJsStorage.lokiStorageDb instanceof loki === false) {
+          // loki was not initialized before => init loki db
+          this._initLokijsDatabase();
+        }
+
+        if (LokiJsStorage.loaded) {
+          this.loaded = true;
+          this.fire('loaded', {loaded: true});
+        }
+
+        // watch loki storage loaded property
+        var _this = this;
+        LokiJsStorage.onPropertyChanged('loaded', function(value) {
+          if (value) {
+            _this.loaded = true;
+            _this.fire('loaded', {loaded: true});
+          }
+        });
+      },
+      _getIdbAdapter: function() {
+        return new LokiIndexedAdapter(this.idbAdapterName);
+      },
+      _initLokijsDatabase: function() {
+        if ((this.dbName === '' || this.idbAdapterName === '')) {
+          console.error('[etools-lokijs-storage] You must provide dbName and idbAdapterName according with your app setup.');
+          return;
+        }
+        LokiJsStorage.lokiStorageIdbAdapter = this._getIdbAdapter();
+        LokiJsStorage.lokiStorageDb = new loki(this.dbName, {
+          verbose: true,
+          autoload: true,
+          autoloadCallback: updateLokiJsStorageInstance,
+          autosave: true,
+          autosaveInterval: this.autosaveInterval,
+          persistenceMethod: 'adapter',
+          adapter: LokiJsStorage.lokiStorageIdbAdapter
+        });
+
+      },
+      getCollection: function(collectionName) {
+        return LokiJsStorage.lokiStorageDb.getCollection(collectionName);
+      },
+      addCollection: function(collectionName, uniqueProperties, collectionIndices, ttlInterval, expire) {
+        var collectionOptions = {};
+        if (uniqueProperties && !Array.isArray(uniqueProperties)) {
+          console.error('[lokijs-storage] collection uniqueProperties must be an array');
+        }
+        if (collectionIndices && !Array.isArray(collectionIndices)) {
+          console.error('[lokijs-storage] collection collectionIndices must be an array');
+        }
+
+        if (uniqueProperties) {
+          collectionOptions['unique'] = uniqueProperties;
+        }
+        if (collectionIndices) {
+          collectionOptions['indices'] = collectionIndices;
+        }
+
+        if (typeof ttlInterval === "number" && ttlInterval > 0) {
+          collectionOptions['ttl'] = ttlInterval;
+          collectionOptions['ttlInterval'] = ttlInterval;
+        }
+
+        LokiJsStorage.lokiStorageDb.addCollection(collectionName, collectionOptions);
+
+        // add to collections list
+        this.addToCollectionsList(collectionName, expire);
+        // return new added collection
+        return this.getCollection(collectionName);
+      },
+      insertData: function(collection, data) {
+        var dbCollection = null;
+        if (typeof collection === 'string') {
+          dbCollection = LokiJsStorage.lokiStorageDb.getCollection(collection);
+        } else if (typeof collection === 'object') {
+          dbCollection = collection;
+        }
+
+        if (dbCollection !== null) {
+          dbCollection.insert(data); // data can be object or array
+          return true;
+        }
+        return false;
+      },
+      removeCollection: function(collectionName, removeFromCollectionsList) {
+        if (typeof removeFromCollectionsList !== 'boolean') {
+          removeFromCollectionsList = true;
+        }
+        var collection = LokiJsStorage.lokiStorageDb.getCollection(collectionName);
+        if (collection) {
+          LokiJsStorage.lokiStorageDb.removeCollection(collectionName);
+          // remove it from collections list
+          if (removeFromCollectionsList) {
+            var collections = this.getCollectionsList();
+            collections.removeWhere({name: collectionName});
+          }
+          return true;
+        }
+        return false;
+      },
+      getCollectionsList: function() {
+        var collections = LokiJsStorage.lokiStorageDb.getCollection('collectionsList');
+        if (collections === null) {
+          collections = LokiJsStorage.lokiStorageDb.addCollection('collectionsList', {
+            unique: ['name'],
+            indices: ['name']
+          });
+        }
+        return collections;
+      },
+      addToCollectionsList: function(collectionName, expireTime) {
+        var collections = this.getCollectionsList();
+        var collectionData = {name: collectionName};
+        if (expireTime !== undefined && expireTime > 0) {
+          collectionData.expire = Date.now() + expireTime;
+        }
+        collections.insert(collectionData);
+      },
+      cleanExpiredCollections: function() {
+        var collections = this.getCollectionsList();
+        collections.data.forEach(function (collection) {
+          if (collection.hasOwnProperty('expire') && collection.expire > 0) {
+            if (collection.expire < Date.now()) {
+              this.removeCollection(collection.name, false);
+              collections.removeWhere({name: collection.name});
+            }
+          }
+        });
+      },
+      saveDatabase: function(callback) {
+        LokiJsStorage.lokiStorageDb.saveDatabase(callback);
+      },
+      getLokiDatabaseInstance: function() {
+        return LokiJsStorage.lokiStorageDb;
+      }
+
+    });
+
+  })();
+  </script>
+</dom-module>

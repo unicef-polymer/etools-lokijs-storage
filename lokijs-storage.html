@@ -1,0 +1,36 @@
+<!-- Global lokijs storage instance -->
+<script src="../lokijs/build/lokijs.min.js"></script>
+<script src="../lokijs/build/loki-indexed-adapter.min.js"></script>
+<script>
+  'use strict';
+
+  function LokiStorage() {
+    this.loaded = false;
+    this.lokiStorageDb = {};
+    this.lokiStorageIdbAdapter = {};
+  }
+
+  // define a property changed event; this will be used to see when the loki database was loaded
+  if (!LokiStorage.prototype.onPropertyChanged) {
+    Object.defineProperty(Object.prototype, 'onPropertyChanged', {
+      value: function (prop, handler) {
+        var setter = function (val) {
+          return val = handler.call(this, val);
+        };
+        Object.defineProperty(this, prop, {
+          set: setter
+        });
+      }
+    });
+  }
+
+  var LokiJsStorage = new LokiStorage();
+
+  // loki db load callback
+  function updateLokiJsStorageInstance() {
+    if (LokiJsStorage.lokiStorageDb instanceof loki) {
+      LokiJsStorage.loaded = true;
+    }
+  }
+
+</script>

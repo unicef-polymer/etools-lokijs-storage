@@ -1,0 +1,73 @@
+<!doctype html>
+<html>
+  <head>
+    <title>etools-lokijs-storage demo</title>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, minimum-scale=1.0, initial-scale=1, user-scalable=yes">
+    <script src="../../webcomponentsjs/webcomponents-lite.js"></script>
+
+    <link rel="import" href="../../iron-demo-helpers/demo-pages-shared-styles.html">
+    <link rel="import" href="../../iron-demo-helpers/demo-snippet.html">
+
+    <!--<link rel="import" href="../etools-lokijs-storage.html">-->
+    <link rel="import" href="demo-test-loki-element.html">
+
+    <style is="custom-style" include="demo-pages-shared-styles">
+      .vertical-section-container {
+        max-width: 900px;
+        line-height: 1.456;
+      }
+    </style>
+  </head>
+  <body>
+
+    <div class="vertical-section-container centered">
+      <h3>Basic etools-lokijs-storage Demo</h3>
+      <demo-snippet>
+        <template>
+          <!--
+          <dom-module id="demo-test-loki-element">
+            <template>
+              <etools-lokijs-storage id="lokiStorageEl"
+                db-name="localAppDb"
+                idb-adapter-name="localStorageAdapter"
+                on-loaded="handleLoaded"></etools-lokijs-storage>
+            </template>
+
+            <script>
+              (function() {
+
+                'use strict';
+                Polymer({
+                  is: 'demo-test-loki-element',
+                  properties: {
+
+                  },
+                  _lokiDbIsLoaded: function(loaded) {
+                    if (loaded) {
+                      this.$.lokiStorageEl.removeCollection('testNewCollection');
+                      var newCollection = this.$.lokiStorageEl.addCollection('testNewCollection', ['id'], ['id'], null, 60000);
+                      this.$.lokiStorageEl.insertData(newCollection, [{id: 1, name: 'John Doe'}, {id: 2, name: 'Jane Doe'}]);
+                      this.$.lokiStorageEl.saveDatabase();
+                      console.log('loki collections: ', this.$.lokiStorageEl.getLokiDatabaseInstance(), this.$.lokiStorageEl.getLokiDatabaseInstance().getCollection('collectionsList'));
+                    }
+                  },
+
+                  handleLoaded: function(event) {
+                    console.log('on-loaded event', event.detail.loaded)
+                    this._lokiDbIsLoaded(event.detail.loaded);
+                  }
+
+                });
+
+              })();
+            </script>
+          </dom-module>
+          -->
+          <demo-test-loki-element></demo-test-loki-element>
+        </template>
+      </demo-snippet>
+    </div>
+
+  </body>
+</html>
