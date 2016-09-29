@@ -69,21 +69,22 @@ https://rawgit.com/techfort/LokiJS/master/jsdoc/index.html).
         return new LokiIndexedAdapter(this.idbAdapterName);
       },
       _initLokijsDatabase: function() {
-        if ((this.dbName === '' || this.idbAdapterName === '')) {
-          console.error('[etools-lokijs-storage] You must provide dbName and idbAdapterName according with your app setup.');
-          return;
-        }
-        LokiJsStorage.lokiStorageIdbAdapter = this._getIdbAdapter();
-        LokiJsStorage.lokiStorageDb = new loki(this.dbName, {
-          verbose: true,
-          autoload: true,
-          autoloadCallback: updateLokiJsStorageInstance,
-          autosave: true,
-          autosaveInterval: this.autosaveInterval,
-          persistenceMethod: 'adapter',
-          adapter: LokiJsStorage.lokiStorageIdbAdapter
-        });
-
+        // You must provide dbName and idbAdapterName according with your app setup.
+        this.debounce('initLokiStorage', function() {
+          if ((this.dbName === '' || this.idbAdapterName === '')) {
+            return;
+          }
+          LokiJsStorage.lokiStorageIdbAdapter = this._getIdbAdapter();
+          LokiJsStorage.lokiStorageDb = new loki(this.dbName, {
+            verbose: true,
+            autoload: true,
+            autoloadCallback: updateLokiJsStorageInstance,
+            autosave: true,
+            autosaveInterval: this.autosaveInterval,
+            persistenceMethod: 'adapter',
+            adapter: LokiJsStorage.lokiStorageIdbAdapter
+          });
+        }, 200);
       },
       getCollection: function(collectionName) {
         return LokiJsStorage.lokiStorageDb.getCollection(collectionName);

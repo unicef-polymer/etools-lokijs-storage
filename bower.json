@@ -1,7 +1,7 @@
 {
   "name": "etools-lokijs-storage",
   "description": "Polymer element that integrates LokiJS storage in your app, used for client side data caching, offline work and more.",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "license": "https://github.com/unicef-polymer/etools-lokijs-storage/blob/master/LICENSE.md",
   "main": "etools-lokijs-storage.html",
   "dependencies": {
