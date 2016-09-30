@@ -23,47 +23,9 @@
 
     <div class="vertical-section-container centered">
       <h3>Basic etools-lokijs-storage Demo</h3>
+      <p>Take a look at the demo-test-loki-element element's code to see some examples of etools-lokijs-storage.</p>
       <demo-snippet>
         <template>
-          <!--
-          <dom-module id="demo-test-loki-element">
-            <template>
-              <etools-lokijs-storage id="lokiStorageEl"
-                db-name="localAppDb"
-                idb-adapter-name="localStorageAdapter"
-                on-loaded="handleLoaded"></etools-lokijs-storage>
-            </template>
-
-            <script>
-              (function() {
-
-                'use strict';
-                Polymer({
-                  is: 'demo-test-loki-element',
-                  properties: {
-
-                  },
-                  _lokiDbIsLoaded: function(loaded) {
-                    if (loaded) {
-                      this.$.lokiStorageEl.removeCollection('testNewCollection');
-                      var newCollection = this.$.lokiStorageEl.addCollection('testNewCollection', ['id'], ['id'], null, 60000);
-                      this.$.lokiStorageEl.insertData(newCollection, [{id: 1, name: 'John Doe'}, {id: 2, name: 'Jane Doe'}]);
-                      this.$.lokiStorageEl.saveDatabase();
-                      console.log('loki collections: ', this.$.lokiStorageEl.getLokiDatabaseInstance(), this.$.lokiStorageEl.getLokiDatabaseInstance().getCollection('collectionsList'));
-                    }
-                  },
-
-                  handleLoaded: function(event) {
-                    console.log('on-loaded event', event.detail.loaded)
-                    this._lokiDbIsLoaded(event.detail.loaded);
-                  }
-
-                });
-
-              })();
-            </script>
-          </dom-module>
-          -->
           <demo-test-loki-element></demo-test-loki-element>
         </template>
       </demo-snippet>

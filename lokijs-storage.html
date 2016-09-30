@@ -5,32 +5,59 @@
   'use strict';
 
   function LokiStorage() {
-    this.loaded = false;
-    this.lokiStorageDb = {};
-    this.lokiStorageIdbAdapter = {};
+    // store all loki elements here so we can use them for autoload callback
+    this.lokiElements = [];
+  }
+  /**
+   * Check if we already have an element that loaded the database identified by bdName and idbAdapterName.
+   * If such and element is found we will use it's loki db instance in the new element where this method is called
+   * to avoid reloading same database id multiple loki elements are stamped in a very short interval (for example you
+   * have 2 or 3 element on the same page, only one will load the database, the other ones will wait the loaded event
+   * to be fired);
+   *
+   * @param dbName
+   * @param idbAdapterName
+   * @returns {*}
+   */
+  LokiStorage.prototype.alreadyLoaded = function(dbName, idbAdapterName) {
+    var lokiElement = null;
+    for (var i = 0; i < this.lokiElements.length; i++) {
+      if (this.lokiElements[i].dbName === dbName && this.lokiElements[i].idbAdapterName === idbAdapterName) {
+        lokiElement = this.lokiElements[i];
+        break;
+      }
+    };
+
+    if (lokiElement !== null) {
+      if (lokiElement.initInProgress === true) {
+        return { lokiDb: lokiElement, loaded: false };
+      }
+      if (lokiElement.loaded === true) {
+        return { lokiDb: lokiElement, loaded: true };
+      }
+    }
+
+    return { lokiDb: null, loaded: false };
   }
 
-  // define a property changed event; this will be used to see when the loki database was loaded
-  if (!LokiStorage.prototype.onPropertyChanged) {
-    Object.defineProperty(Object.prototype, 'onPropertyChanged', {
-      value: function (prop, handler) {
-        var setter = function (val) {
-          return val = handler.call(this, val);
-        };
-        Object.defineProperty(this, prop, {
-          set: setter
-        });
+  /**
+   *
+   * This will be triggered every time a new loki database is loaded and it will check the elements that have the same
+   * dbName and idbAdapterName and set the loaded property for each element that are using current database
+   *
+   * @param dbName
+   * @param idbAdapterName
+   */
+  LokiStorage.prototype.autoloadCallback = function (dbName, idbAdapterName) {
+    this.lokiElements.forEach(function(el) {
+      if (el.dbName === dbName && el.idbAdapterName === idbAdapterName && el.initInProgress === true) {
+        el.loaded = true;
+        el.initInProgress = false;
       }
     });
-  }
+  };
+
 
   var LokiJsStorage = new LokiStorage();
-
-  // loki db load callback
-  function updateLokiJsStorageInstance() {
-    if (LokiJsStorage.lokiStorageDb instanceof loki) {
-      LokiJsStorage.loaded = true;
-    }
-  }
 
 </script>

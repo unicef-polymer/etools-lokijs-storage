@@ -18,11 +18,11 @@ You can use the `loaded` event available to execute some actions after the loki 
   on-loaded="handleLoaded"></etools-lokijs-storage>
 ```
 
-The local database will be identified by `db-name` and `idb-adapter-name` and it will be a single instance for the entire app.
-When the element is stamped it checks if the database was loaded earlier. If it was loaded then automatically fires the loaded event. 
-If it was not loaded then trigger loki initialization and then fire db loaded event. Global `LokiJsStorage` object will contain 
-loki db, idbAdapter instances and also a loaded flag. Do not use this object in your code, use instead:
+The local database will be identified by `db-name` and `idb-adapter-name` and it will be a single instance for the 
+entire app used by each element. When the element is stamped it checks if the database was loaded earlier. If it was loaded 
+then automatically fires the loaded event. If it was not loaded then trigger loki initialization and then fire db loaded event. 
 
+Get loki database instance:
 ```javascript
 // inside your Polymer element
 this.$.lokiStorageEl.getLokiDatabaseInstance();

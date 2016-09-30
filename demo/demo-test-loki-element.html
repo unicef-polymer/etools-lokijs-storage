@@ -4,6 +4,14 @@
 <dom-module id="demo-test-loki-element">
   <template>
     <etools-lokijs-storage id="lokiStorageEl" db-name="localAppDb" idb-adapter-name="localStorageAdapter" on-loaded="handleLoaded"></etools-lokijs-storage>
+
+    <etools-lokijs-storage id="lokiStorageEl2" db-name="localAppDb" idb-adapter-name="localStorageAdapter" on-loaded="handleSecondLoaded"></etools-lokijs-storage>
+
+    <etools-lokijs-storage id="lokiStorageEl3" db-name="[[localAppDb]]" idb-adapter-name="[[localStorageAdapter]]" on-loaded="handleThirdLoaded"></etools-lokijs-storage>
+
+    <etools-lokijs-storage id="lokiStorageEl4" db-name="[[localAppDb2]]" idb-adapter-name="[[localStorageAdapter2]]" on-loaded="handle4thLoaded"></etools-lokijs-storage>
+
+    <etools-lokijs-storage id="lokiStorageEl5" db-name="[[localAppDb3]]" idb-adapter-name="[[localStorageAdapter3]]" on-loaded="handleLoaded"></etools-lokijs-storage>
   </template>
 
   <script>
@@ -15,20 +23,50 @@
         properties: {
 
         },
+        ready: function() {
+          var _this = this;
+          // simple tests
+          setTimeout(function(){
+            _this.localAppDb = 'localAppDb1';
+            _this.localStorageAdapter = 'localStorageAdapter1';
+            setTimeout(function(){
+              _this.localAppDb2 = 'localAppDb1';
+              _this.localStorageAdapter2 = 'localStorageAdapter1';
+              _this.localAppDb3 = 'localAppDb';
+              _this.localStorageAdapter3 = 'localStorageAdapter';
+            }, 5000);
+          }, 5000);
+        },
         _lokiDbIsLoaded: function(loaded) {
           if (loaded) {
             this.$.lokiStorageEl.removeCollection('testNewCollection');
             var newCollection = this.$.lokiStorageEl.addCollection('testNewCollection', ['id'], ['id'], null, 60000);
             this.$.lokiStorageEl.insertData(newCollection, [{id: 1, name: 'John Doe'}, {id: 2, name: 'Jane Doe'}]);
             this.$.lokiStorageEl.saveDatabase();
-            console.log('loki collections: ', this.$.lokiStorageEl.getLokiDatabaseInstance(), this.$.lokiStorageEl.getLokiDatabaseInstance().getCollection('collectionsList'));
+            console.log('loki collections: ', this.$.lokiStorageEl.getLokiDatabaseInstance(), this.$.lokiStorageEl.getCollection('collectionsList'));
           }
         },
 
         handleLoaded: function(event) {
           console.log('on-loaded event', event.detail.loaded)
           this._lokiDbIsLoaded(event.detail.loaded);
+        },
+
+        handleSecondLoaded: function(event) {
+          console.log('second on-loaded event', event.detail.loaded)
+          console.log(this.$.lokiStorageEl2.getCollection('collectionsList'));
+        },
+
+        handleThirdLoaded: function(event) {
+          console.log('lazy loaded element');
+          console.log(this.$.lokiStorageEl3.getCollectionsList());
+        },
+
+        handle4thLoaded: function () {
+          console.log('lazy loaded element, after loki loaded second db');
+          console.log(this.$.lokiStorageEl4.getCollectionsList());
         }
+
 
       });
 

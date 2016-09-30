@@ -28,11 +28,13 @@ https://rawgit.com/techfort/LokiJS/master/jsdoc/index.html).
       properties: {
         dbName: {
           type: String,
-          value: ''
+          value: '',
+          observer: '_loadLokiJsDatabase'
         },
         idbAdapterName: {
           type: String,
-          value: ''
+          value: '',
+          observer: '_loadLokiJsDatabase'
         },
         autosaveInterval: {
           type: Number,
@@ -40,54 +42,88 @@ https://rawgit.com/techfort/LokiJS/master/jsdoc/index.html).
         },
         loaded: {
           type: Boolean,
-          value: LokiJsStorage.loaded,
+          value: false,
+          notify: true,
+          observer: '_lokijsDatabaseLoaded'
+        },
+        initInProgress: {
+          type: Boolean,
+          value: false,
           notify: true
+        },
+        lokiDb: {
+          type: Object,
+          value: null
         }
       },
       ready: function () {
-        this.loaded = false;
-        if (LokiJsStorage.lokiStorageDb instanceof loki === false) {
-          // loki was not initialized before => init loki db
-          this._initLokijsDatabase();
+        // You must provide dbName and idbAdapterName according with your app setup.
+        if (this.hasDbAndAdapterSet()) {
+          this._loadLokiJsDatabase();
         }
-
-        if (LokiJsStorage.loaded) {
-          this.loaded = true;
+        LokiJsStorage.lokiElements.push(this);
+      },
+      detached: function () {
+        LokiJsStorage.lokiElements.splice(LokiJsStorage.lokiElements.indexOf(this), 1);
+      },
+      _lokijsDatabaseLoaded: function (value) {
+        if (value === true) {
           this.fire('loaded', {loaded: true});
         }
-
-        // watch loki storage loaded property
-        var _this = this;
-        LokiJsStorage.onPropertyChanged('loaded', function(value) {
-          if (value) {
-            _this.loaded = true;
-            _this.fire('loaded', {loaded: true});
+      },
+      _loadLokiJsDatabase: function() {
+        if (!this.hasDbAndAdapterSet()) {
+          return;
+        }
+        this.debounce('loadLokiDatabase', function() {
+          this.loaded = false;
+          /**
+           * LokiJsStorage.alreadyLoaded will check if there is already an element initialized
+           * for the same dabName and adapter and returns the lokiDb instance. If no other lokiDb instance found then
+           * fire _initLokijsDatabase
+           */
+          var lokiLoaded = LokiJsStorage.alreadyLoaded(this.dbName, this.idbAdapterName);
+          if (lokiLoaded.lokiDb === null) {
+            // loki was not initialized before for this dbName and adapter => init loki db
+            this._initLokijsDatabase();
+          } else {
+            this.lokiDb = lokiLoaded.lokiDb;
+            /**
+             * At this stage the liki db can be in loading state(in-progress) or it can be already loaded
+             */
+            if (lokiLoaded.loaded === false) {
+              this.initInProgress = true;
+            } else {
+              this.loaded = true;
+            }
           }
+        }, 200);
+      },
+
+      _initLokijsDatabase: function() {
+        this.initInProgress = true;
+        this.lokiDb = new loki(this.dbName, {
+          verbose: true,
+          autoload: true,
+          autoloadCallback: LokiJsStorage.autoloadCallback.bind(LokiJsStorage, this.dbName, this.idbAdapterName),
+          autosave: true,
+          autosaveInterval: this.autosaveInterval,
+          persistenceMethod: 'adapter',
+          adapter: this._getIdbAdapter()
         });
       },
+
       _getIdbAdapter: function() {
         return new LokiIndexedAdapter(this.idbAdapterName);
       },
-      _initLokijsDatabase: function() {
-        // You must provide dbName and idbAdapterName according with your app setup.
-        this.debounce('initLokiStorage', function() {
-          if ((this.dbName === '' || this.idbAdapterName === '')) {
-            return;
-          }
-          LokiJsStorage.lokiStorageIdbAdapter = this._getIdbAdapter();
-          LokiJsStorage.lokiStorageDb = new loki(this.dbName, {
-            verbose: true,
-            autoload: true,
-            autoloadCallback: updateLokiJsStorageInstance,
-            autosave: true,
-            autosaveInterval: this.autosaveInterval,
-            persistenceMethod: 'adapter',
-            adapter: LokiJsStorage.lokiStorageIdbAdapter
-          });
-        }, 200);
+      hasDbAndAdapterSet: function() {
+        if (this.dbName !== '' && this.idbAdapterName !== '') {
+          return true
+        }
+        return false;
       },
       getCollection: function(collectionName) {
-        return LokiJsStorage.lokiStorageDb.getCollection(collectionName);
+        return this.lokiDb.getCollection(collectionName);
       },
       addCollection: function(collectionName, uniqueProperties, collectionIndices, ttlInterval, expire) {
         var collectionOptions = {};
@@ -110,7 +146,7 @@ https://rawgit.com/techfort/LokiJS/master/jsdoc/index.html).
           collectionOptions['ttlInterval'] = ttlInterval;
         }
 
-        LokiJsStorage.lokiStorageDb.addCollection(collectionName, collectionOptions);
+        this.lokiDb.addCollection(collectionName, collectionOptions);
 
         // add to collections list
         this.addToCollectionsList(collectionName, expire);
@@ -120,7 +156,7 @@ https://rawgit.com/techfort/LokiJS/master/jsdoc/index.html).
       insertData: function(collection, data) {
         var dbCollection = null;
         if (typeof collection === 'string') {
-          dbCollection = LokiJsStorage.lokiStorageDb.getCollection(collection);
+          dbCollection = this.lokiDb.getCollection(collection);
         } else if (typeof collection === 'object') {
           dbCollection = collection;
         }
@@ -135,9 +171,9 @@ https://rawgit.com/techfort/LokiJS/master/jsdoc/index.html).
         if (typeof removeFromCollectionsList !== 'boolean') {
           removeFromCollectionsList = true;
         }
-        var collection = LokiJsStorage.lokiStorageDb.getCollection(collectionName);
+        var collection = this.lokiDb.getCollection(collectionName);
         if (collection) {
-          LokiJsStorage.lokiStorageDb.removeCollection(collectionName);
+          this.lokiDb.removeCollection(collectionName);
           // remove it from collections list
           if (removeFromCollectionsList) {
             var collections = this.getCollectionsList();
@@ -148,9 +184,9 @@ https://rawgit.com/techfort/LokiJS/master/jsdoc/index.html).
         return false;
       },
       getCollectionsList: function() {
-        var collections = LokiJsStorage.lokiStorageDb.getCollection('collectionsList');
+        var collections = this.lokiDb.getCollection('collectionsList');
         if (collections === null) {
-          collections = LokiJsStorage.lokiStorageDb.addCollection('collectionsList', {
+          collections = this.lokiDb.addCollection('collectionsList', {
             unique: ['name'],
             indices: ['name']
           });
@@ -177,10 +213,10 @@ https://rawgit.com/techfort/LokiJS/master/jsdoc/index.html).
         });
       },
       saveDatabase: function(callback) {
-        LokiJsStorage.lokiStorageDb.saveDatabase(callback);
+        this.lokiDb.saveDatabase(callback);
       },
       getLokiDatabaseInstance: function() {
-        return LokiJsStorage.lokiStorageDb;
+        return this.lokiDb;
       }
 
     });
