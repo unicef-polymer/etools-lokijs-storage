@@ -212,8 +212,9 @@ https://rawgit.com/techfort/LokiJS/master/jsdoc/index.html).
           }
         });
       },
-      saveDatabase: function() {
-        this.lokiDb.saveDatabase();
+      saveDatabase: function(callback) {
+        var c = callback || function() {};
+        this.lokiDb.saveDatabase(c);
       },
       getLokiDatabaseInstance: function() {
         return this.lokiDb;
